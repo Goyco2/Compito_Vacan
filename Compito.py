@@ -15,6 +15,8 @@ from folium.plugins import MousePosition
 import numpy as np
 
 Giudizio = pd.read_excel("/workspace/Compito_Vacanze/static/GdL_GV_2021.xlsx")
+Giudizio['giudizio'] = Giudizio['giudizio'].str.lower()
+Giudizio['giudizio'] = Giudizio['giudizio'].replace(['entro il limiti'],'entro i limiti')
 
 @app.route('/', methods=['GET', 'POST'])
 def scelta():
@@ -26,7 +28,7 @@ def selezione():
     if scelta == "es1":
         return redirect(url_for("esercizio1"))
     elif scelta == "es2":
-        return redirect(url_for(""))
+        return redirect(url_for("esercizio2"))
     elif scelta == "es3":
         return redirect(url_for(""))
     elif scelta == "es4":
@@ -42,10 +44,18 @@ def selezione():
 
 @app.route('/esercizio1', methods=['GET'])
 def esercizio1():
-    Giudizio= Giudizio['giudizio'].str.lower()
-    print(Giudizio)
-    giud_luog = Giudizio.groupby("giudizio")["localita"].count().reset_index()
+    global giud_luog
+    giud_luog = Giudizio.groupby("giudizio", as_index=False)["localita"].count()
     return render_template("risultato1.html",risultato = giud_luog.to_html())
+
+@app.route('/esercizio2', methods=['GET'])
+def esercizio2():
+    giud_luog = Giudizio.groupby("giudizio", as_index=False)["localita"].count()
+    Giudizio['localita'] = (giud_luog.localita/ Giudizio.localita)*100
+    print(Giudizio['localita'])
+    giud_perc = Giudizio.groupby("giudizio", as_index=False)['localita'].count()
+
+    return render_template("risultato2.html",risultato2 = giud_perc.to_html())
 
     
 if __name__ == '__main__':
