@@ -44,18 +44,18 @@ def selezione():
 
 @app.route('/esercizio1', methods=['GET'])
 def esercizio1():
-    global giud_luog
     giud_luog = Giudizio.groupby("giudizio", as_index=False)["localita"].count()
     return render_template("risultato1.html",risultato = giud_luog.to_html())
 
 @app.route('/esercizio2', methods=['GET'])
 def esercizio2():
     giud_luog = Giudizio.groupby("giudizio", as_index=False)["localita"].count()
-    Giudizio['localita'] = (giud_luog.localita/ Giudizio.localita)*100
+    Giudizio['localitaSum'] = Giudizio['localita'].count()
+    Giudizio['localita'] = (giud_luog['localita'] / Giudizio['localitaSum'])*100
     print(Giudizio['localita'])
-    giud_perc = Giudizio.groupby("giudizio", as_index=False)['localita'].count()
 
-    return render_template("risultato2.html",risultato2 = giud_perc.to_html())
+
+    return render_template("risultato2.html",risultato2 = Giudizio[['giudizio','localita']].head(3).to_html())
 
     
 if __name__ == '__main__':

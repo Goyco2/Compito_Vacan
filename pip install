@@ -1,0 +1,1 @@
+pip install Flask geopandas matplotlib contextily folium pandas openpyxl
