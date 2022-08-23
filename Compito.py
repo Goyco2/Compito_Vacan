@@ -41,7 +41,7 @@ def selezione():
     elif scelta == "es4":
         return redirect(url_for("esercizio4"))
     elif scelta == "es5":
-        return redirect(url_for(""))
+        return redirect(url_for("esercizio5"))
     elif scelta == "es6":
         return redirect(url_for(""))
     elif scelta == "es7":
@@ -89,13 +89,50 @@ def esercizio3():
 
 @app.route('/esercizio4', methods=['GET'])
 def esercizio4():
+    global giud, giud_Lomb
     giud = Regioni[Regioni.DEN_REG == 'Lombardia']
-    print(giud)
-    giud_Lomb = gGiudizio[gGiudizio.within(giud.geometry.squeeze())]
-    return render_template("risultato4.html",risultato4 = giud_Lomb.to_html())
+    print(gGiudizio)
+    giud_Lomb = gGiudizio[gGiudizio.contains(giud.geometry.squeeze())]   # ? non rislutano punti in lobardia anche se ci sono
+    return render_template("risultato4.html",risultato4 = giud_Lomb.to_html())   
+
+@app.route("/mappaLombardia.png", methods=["GET"])
+def mappaLombardia():
+    fig, ax = plt.subplots(figsize = (12,8))
+
+    giud_Lomb.to_crs(epsg=3857).plot(ax=ax, pointcolor='k')
+    giud.to_crs(epsg=3857).plot(ax=ax, edgecolor="k", facecolor='None')
+    contextily.add_basemap(ax=ax)   
+
+    output = io.BytesIO()
+    FigureCanvas(fig).print_png(output)
+    return Response(output.getvalue(), mimetype='image/png')
 
     
  
+@app.route('/esercizio5', methods=['GET'])
+def esercizio5():
+    global giud, giud_Lomb, popup
+    giud = Regioni[Regioni.DEN_REG == 'Lombardia']
+    giud_Lomb = gGiudizio[gGiudizio.contains(giud.geometry.squeeze())]
+    for index, row in gGiudizio.iterrows():
+        IFrame = folium.IFrame(str(row.loc['giudizio']))
+        popup = folium.Popup(IFrame, min_width=210, max_width=210)
+        return render_template("risultato5.html",risultato5 = giud_Lomb.to_html())   
+
+
+
+@app.route("/mappaLombardia2.png", methods=["GET"])
+def mappaLombardia2():
+    fig, ax = plt.subplots(figsize = (12,8))
+
+    giud_Lomb.to_crs(epsg=3857).plot(ax=ax, pointcolor='k',popup=popup)
+    giud.to_crs(epsg=3857).plot(ax=ax, edgecolor="k", facecolor='None')
+    contextily.add_basemap(ax=ax)   
+
+    output = io.BytesIO()
+    FigureCanvas(fig).print_png(output)
+    return Response(output.getvalue(), mimetype='image/png')
+
 
 if __name__ == '__main__':
   app.run(host='0.0.0.0', port=3246, debug=True)
