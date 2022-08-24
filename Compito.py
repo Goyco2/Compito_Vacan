@@ -3,7 +3,7 @@ app = Flask(__name__)
 import io
 import geopandas
 from geopandas import GeoDataFrame
-from shapely.geometry import Point
+from shapely.geometry import Point, Polygon
 import contextily
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure
@@ -23,7 +23,7 @@ Regioni = geopandas.read_file('/workspace/Compito_Vacanze/Reg01012021_g_WGS84.zi
 geometry = [Point(xy) for xy in zip(Giudizio.longitude, Giudizio.latitude)]
 Giudizio = Giudizio.drop(['longitude', 'latitude'], axis=1)
 gGiudizio = GeoDataFrame(Giudizio, crs="EPSG:4326", geometry=geometry)
-print(gGiudizio)
+Province = geopandas.read_file('/workspace/Compito_Vacanze/ProvCM01012021_g.zip')
 
 @app.route('/', methods=['GET'])
 def scelta():
@@ -31,6 +31,7 @@ def scelta():
 
 @app.route('/selezione', methods=['GET'])
 def selezione():
+
     scelta = request.args["scelta"]
     if scelta == "es1":
         return redirect(url_for("esercizio1"))
@@ -43,11 +44,12 @@ def selezione():
     elif scelta == "es5":
         return redirect(url_for("esercizio5"))
     elif scelta == "es6":
-        return redirect(url_for(""))
+        return redirect(url_for("Sesercizio6"))
     elif scelta == "es7":
-        return redirect(url_for(""))    
+        return redirect(url_for("Sesercizio7"))    
     else:
-        return redirect(url_for(""))
+        return redirect(url_for("esercizio8"))
+
 
 @app.route('/esercizio1', methods=['GET'])
 def esercizio1():
@@ -70,7 +72,7 @@ def grafico():
     Giudizio['localita%'] = (giud_luog['localita'] / Giudizio['localitaSum'])*100
     Giudizio2 = Giudizio[['localita%','giudizio']].copy()
     Giudizio1 = Giudizio2.dropna()
-    print(Giudizio1)
+
     
 
     fig = plt.figure()
@@ -91,7 +93,6 @@ def esercizio3():
 def esercizio4():
     global giud, giud_Lomb
     giud = Regioni[Regioni.DEN_REG == 'Lombardia']
-    print(gGiudizio)
     giud_Lomb = gGiudizio[gGiudizio.contains(giud.geometry.squeeze())]   # ? non rislutano punti in lobardia anche se ci sono
     return render_template("risultato4.html",risultato4 = giud_Lomb.to_html())   
 
@@ -132,6 +133,51 @@ def mappaLombardia2():
     output = io.BytesIO()
     FigureCanvas(fig).print_png(output)
     return Response(output.getvalue(), mimetype='image/png')
+
+@app.route('/Sesercizio6', methods = ["GET"])
+def Sesercizio6():
+    return render_template("esercizio6.html")
+
+@app.route('/esercizio6', methods = ["GET"])
+def esercizio6():
+    global giud_Rich, giudizioR
+    inp = request.args["Input"]
+    regione_richiesta = list(Regioni["DEN_REG"])
+    if inp in regione_richiesta:
+        giudizioR = Regioni[Regioni.DEN_REG == inp]
+        giud_Rich = gGiudizio[gGiudizio.intersects(giudizioR.geometry.squeeze())]
+        return render_template("risultato6.html",risultato6 = giud_Rich.to_html())   
+    else:
+        return render_template('errore.html')
+
+
+@app.route("/mappaRichiesta.png", methods=["GET"])
+def mappaRichiesta():
+    global giud_Rich, giudizioR
+
+    fig, ax = plt.subplots(figsize = (12,8))
+
+    giud_Rich.to_crs(epsg=3857).plot(ax=ax, pointcolor='k')
+    giudizioR.to_crs(epsg=3857).plot(ax=ax, edgecolor="k", facecolor='None')
+    contextily.add_basemap(ax=ax)   
+
+    output = io.BytesIO()
+    FigureCanvas(fig).print_png(output)
+    return Response(output.getvalue(), mimetype='image/png')
+
+@app.route('/Sesercizio7', methods = ["GET"])
+def Sesercizio7():
+    return render_template("esercizio7.html")        #non trovo un datasets di tutti  i laghi italiani
+
+@app.route('/esercizio7', methods = ["GET"])
+def esercizio7():
+    lago = request.args["lago"]
+
+    return render_template('risultato7.html')
+
+@app.route('/esercizio8', methods = ["GET"])
+def esercizio8():
+    giud_ProvG = Giudizio.groupby("giudizio", as_index=False)["localita"].count()
 
 
 if __name__ == '__main__':
