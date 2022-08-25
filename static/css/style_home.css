@@ -1,0 +1,22 @@
+#home { 
+    background: rgb(0, 0, 0);
+    background: linear-gradient(180deg, rgb(9, 84, 188) 40%, rgb(193, 176, 241) 80%);
+}
+#wave {
+    position: absolute;
+    top: 0;
+    left:0;
+    opacity: 0.2;
+}
+#radio{
+    position: absolute;
+    color :rgb(0, 0, 0);
+    top: 65%;
+    left: 25%;
+}
+h2 {
+    position:relative;
+    color :rgb(0, 0, 0);
+    top: 100%;
+
+}

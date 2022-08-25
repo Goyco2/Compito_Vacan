@@ -3,7 +3,7 @@ app = Flask(__name__)
 import io
 import geopandas
 from geopandas import GeoDataFrame
-from shapely.geometry import Point, Polygon
+from shapely.geometry import Point
 import contextily
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure
@@ -93,7 +93,7 @@ def esercizio3():
 def esercizio4():
     global giud, giud_Lomb
     giud = Regioni[Regioni.DEN_REG == 'Lombardia']
-    giud_Lomb = gGiudizio[gGiudizio.contains(giud.geometry.squeeze())]   # ? non rislutano punti in lobardia anche se ci sono
+    giud_Lomb = gGiudizio[gGiudizio.intersects(giud.geometry.squeeze())]   # ? non rislutano punti in lobardia anche se ci sono
     return render_template("risultato4.html",risultato4 = giud_Lomb.to_html())   
 
 @app.route("/mappaLombardia.png", methods=["GET"])
@@ -177,8 +177,23 @@ def esercizio7():
 
 @app.route('/esercizio8', methods = ["GET"])
 def esercizio8():
-    giud_ProvG = Giudizio.groupby("giudizio", as_index=False)["localita"].count()
+    global giudB, prov
+    prov = Province[['DEN_PROV','geometry']]
+    giudB = gGiudizio[gGiudizio.contains(prov.geometry.squeeze())]
 
 
+
+    return render_template('risultato8.html')
+
+@app.route("/mappaProv.png", methods=["GET"])
+def mappaProv():
+    fig, ax = plt.subplots(figsize = (12,8))
+
+    giudB.to_crs(epsg=3857).plot(ax=ax, column = 'giudizio', edgecolor = 'k', legend = True, figsize=(10,10),cmap='Reds', alpha = 0.6)
+    contextily.add_basemap(ax=ax)   
+
+    output = io.BytesIO()
+    FigureCanvas(fig).print_png(output)
+    return Response(output.getvalue(), mimetype='image/png')
 if __name__ == '__main__':
   app.run(host='0.0.0.0', port=3246, debug=True)
